@@ -22,6 +22,11 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
+      - name: Install Checkov
+        run: |
+          pip install --upgrade pip
+          pip install checkov
+
       - name: Format Check
         run: terraform fmt -check -recursive
 
@@ -31,5 +36,5 @@ jobs:
       - name: Lint with TFLint
         run: tflint --init && tflint
 
-      - name: Run Checkov (Optional)
+      - name: Run Checkov
         run: checkov -d .
