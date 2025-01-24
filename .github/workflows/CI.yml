@@ -14,6 +14,9 @@ permissions:
 jobs:
   terraform-ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to push changes and create a pull request
+      pull-requests: write # Required to create a pull request
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
