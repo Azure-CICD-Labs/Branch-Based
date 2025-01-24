@@ -2,6 +2,10 @@ variable "container_name" {
   description = "The name of the Azure Storage container to store Terraform state file"
 }
 
+variable "env" {
+  description = "The environment for the Azure resources"
+}
+
 variable "prim_loc" {
   description = "The primary location for the Azure resources"
   default     = "uksouth"

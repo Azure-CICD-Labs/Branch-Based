@@ -27,7 +27,5 @@ jobs:
       - name: Lint with TFLint
         run: tflint --init && tflint
 
-      - name: (Optional) Run Checkov for Security
+      - name: Run Checkov (Optional)
         run: checkov -d .
-        # If you want to integrate SCA, you'd also need a separate step or an action
-        # e.g. bridgecrewio/checkov-action
