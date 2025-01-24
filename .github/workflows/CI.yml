@@ -6,6 +6,10 @@ on:
   push:
     branches: ['feature/*', 'bugfix/*']
 
+permissions:
+  contents: read # Required for checking out the repository
+  id-token: write # Required for OIDC authentication
+
 jobs:
   terraform-ci:
     runs-on: ubuntu-latest
@@ -18,23 +22,29 @@ jobs:
         with:
           terraform_version: 1.5.6
 
+      # TFLint helps identify issues in Terraform code, such as misconfigurations, deprecated syntax, and best practice violations.
       - name: Install TFLint
         run: |
           curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
+      # Checkov scans Terraform code for security misconfigurations and policy violations.
       - name: Install Checkov
         run: |
           pip install --upgrade pip
           pip install checkov
 
+      # Ensures the Terraform code adheres to the standard format (avoids messy or inconsistent code).
       - name: Format Check
         run: terraform fmt -check -recursive
 
+      # Checks that the Terraform configuration is syntactically valid and internally consistent.
       - name: Validate
         run: terraform validate
 
+      # Identifies potential issues and enforces best practices for Terraform code.
       - name: Lint with TFLint
         run: tflint --init && tflint
 
+      # Detects security and compliance issues in Terraform code (e.g., overly permissive IAM roles, exposed secrets).
       - name: Run Checkov
         run: checkov -d .
