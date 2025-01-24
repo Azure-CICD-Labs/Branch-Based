@@ -6,9 +6,10 @@ on:
   push:
     branches: ['feature/*', 'bugfix/*']
 
+#  defines what level of access the GH runner has to your repository and other resources
 permissions:
-  contents: read # Required for checking out the repository
-  id-token: write # Required for OIDC authentication
+  contents: read # allows the workflow to read the contents of your repository
+  id-token: write # enables OIDC authentication, allowing GH runner to obtain identity token from GH and use it to authenticate with Azure
 
 jobs:
   terraform-ci:

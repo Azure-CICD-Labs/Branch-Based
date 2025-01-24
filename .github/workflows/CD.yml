@@ -5,6 +5,11 @@ on:
     branches: ['main'] # Automatically deploys to dev on push to main
   workflow_dispatch: # Allows manual triggering for prod
 
+#  defines what level of access the GH runner has to your repository and other resources
+permissions:
+  contents: read # allows the workflow to read the contents of your repository
+  id-token: write # enables OIDC authentication, allowing GH runner to obtain identity token from GH and use it to authenticate with Azure
+
 jobs:
   deploy-dev:
     name: Deploy to Dev
