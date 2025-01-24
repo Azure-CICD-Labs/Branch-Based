@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: ['main']
   push:
-    branches: ['feature/*', 'bugfix/*', 'hotfix/*']
+    branches: ['feature/*', 'bugfix/*']
 
 jobs:
   terraform-ci:
@@ -17,6 +17,10 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
+
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
       - name: Format Check
         run: terraform fmt -check -recursive
