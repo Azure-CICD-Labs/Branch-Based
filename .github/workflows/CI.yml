@@ -54,7 +54,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
-          branch: feature/my-feature-branch # Replace with your source branch
+          branch: ${{ github.ref_name }}
           base: main # Target branch for the PR
           title: 'Automated PR from CI'
           body: |
