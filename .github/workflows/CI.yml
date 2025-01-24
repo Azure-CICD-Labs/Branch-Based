@@ -52,14 +52,3 @@ jobs:
       # Detects security and compliance issues in Terraform code (e.g., overly permissive IAM roles, exposed secrets).
       - name: Run Checkov
         run: checkov -d .
-
-      # Create a PR if the CI pipeline passes
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          branch: ${{ github.ref_name }}
-          base: main # Target branch for the PR
-          title: 'Automated PR from CI'
-          body: |
-            This PR was automatically created after the CI pipeline for branch `feature/my-feature-branch` completed successfully.
-            Please review and merge if everything looks good.
