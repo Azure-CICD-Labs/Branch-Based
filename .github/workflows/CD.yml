@@ -18,6 +18,8 @@ jobs:
     permissions:
       id-token: write # Needed for OIDC
       contents: read
+    env:
+      TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -68,6 +70,8 @@ jobs:
     permissions:
       id-token: write # Needed for OIDC
       contents: read
+    env:
+      TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
