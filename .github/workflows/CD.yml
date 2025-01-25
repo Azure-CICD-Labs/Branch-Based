@@ -54,7 +54,7 @@ jobs:
 
       - name: Terraform Plan (Dev)
         working-directory: terraform
-        run: terraform plan -var-file="dev.tfvars" -out=dev.tfplan
+        run: terraform plan -out=dev.tfplan
 
       - name: Terraform Apply (Dev)
         working-directory: terraform
@@ -101,7 +101,7 @@ jobs:
 
       - name: Terraform Plan (Prod)
         working-directory: terraform
-        run: terraform plan -var-file="prod.tfvars" -out=prod.tfplan
+        run: terraform plan -out=prod.tfplan
 
       - name: Upload Terraform Plan for Review
         uses: actions/upload-artifact@v3
