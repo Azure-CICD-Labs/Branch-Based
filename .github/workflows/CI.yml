@@ -1,24 +1,20 @@
 name: Terraform CI
 
 on:
-  pull_request:
-    branches: ['main']
   push:
-    branches: ['feature/*', 'bugfix/*', 'dev/*']
+    branches: ['dev', 'feature/*', 'bugfix/*', 'main']
+  pull_request:
+    branches: ['dev', 'main']
 
-#  defines what level of access the GH runner has to your repository and other resources
 permissions:
-  contents: read # allows the workflow to read the contents of your repository
-  id-token: write # enables OIDC authentication, allowing GH runner to obtain identity token from GH and use it to authenticate with Azure
+  contents: read # Allows reading repository contents
+  id-token: write # Required for OIDC if needed for external scans
 
 jobs:
   terraform-ci:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Required to push changes and create a pull request
-      pull-requests: write # Required to create a pull request
     steps:
-      - name: Checkout Repo
+      - name: Check out Repository
         uses: actions/checkout@v3
 
       - name: Set up Terraform
@@ -26,29 +22,29 @@ jobs:
         with:
           terraform_version: 1.5.6
 
-      # TFLint helps identify issues in Terraform code, such as misconfigurations, deprecated syntax, and best practice violations.
+      # 1. Install TFLint
       - name: Install TFLint
         run: |
           curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
 
-      # Checkov scans Terraform code for security misconfigurations and policy violations.
+      # 2. Install Checkov for security scans
       - name: Install Checkov
         run: |
           pip install --upgrade pip
           pip install checkov
 
-      # Ensures the Terraform code adheres to the standard format (avoids messy or inconsistent code).
+      # 3. Check Terraform formatting
       - name: Format Check
         run: terraform fmt -check -recursive
 
-      # Checks that the Terraform configuration is syntactically valid and internally consistent.
+      # 4. Validate Terraform configuration
       - name: Validate
         run: terraform validate
 
-      # Identifies potential issues and enforces best practices for Terraform code.
+      # 5. Lint using TFLint
       - name: Lint with TFLint
         run: tflint --init && tflint
 
-      # Detects security and compliance issues in Terraform code (e.g., overly permissive IAM roles, exposed secrets).
+      # 6. Security/compliance scan with Checkov
       - name: Run Checkov
         run: checkov -d .

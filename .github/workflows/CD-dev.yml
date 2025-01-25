@@ -1,0 +1,64 @@
+name: Terraform CD - Dev
+
+on:
+  push:
+    branches: ['dev']
+
+permissions:
+  contents: read # Allows reading repository contents
+  id-token: write # Enables OIDC authentication with Azure
+
+jobs:
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
+      TF_VAR_env: dev
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      # 1. OIDC Login to Azure
+      - name: Azure Login (Dev)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # 2. Configure Env for Terraform OIDC
+      - name: Configure Env for Terraform OIDC
+        run: |
+          echo "ARM_USE_OIDC=true" >> $GITHUB_ENV
+          echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+          # If using Azure Public Cloud, no additional ARM_ENVIRONMENT is needed.
+          # For other clouds, you might set ARM_ENVIRONMENT here.
+
+      # 3. Setup Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.6
+
+      # 4. Terraform Init
+      - name: Terraform Init (Dev)
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="container_name=dev-tfstate" \
+            -backend-config="key=multilayer-webapp.tfstate"
+
+      # 5. Terraform Plan
+      - name: Terraform Plan (Dev)
+        working-directory: terraform
+        run: |
+          terraform plan -out=dev.tfplan
+
+      # 6. Terraform Apply
+      - name: Terraform Apply (Dev)
+        working-directory: terraform
+        run: terraform apply -auto-approve dev.tfplan
