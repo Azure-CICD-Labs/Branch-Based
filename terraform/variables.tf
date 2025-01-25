@@ -25,3 +25,6 @@ variable "sec_loc_short" {
   description = "The short name of the secondary location for the Azure resources"
   default     = "ukw"
 }
+
+
+# this is a test comment

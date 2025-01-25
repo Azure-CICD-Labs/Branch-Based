@@ -50,7 +50,7 @@ jobs:
         run: |
           terraform init \
             -backend-config="container_name=dev-tfstate" \
-            -backend-config="key=multilayer-webapp-dev.tfstate"
+            -backend-config="key=multilayer-webapp.tfstate"
 
       - name: Terraform Plan (Dev)
         working-directory: terraform
@@ -97,7 +97,7 @@ jobs:
         run: |
           terraform init \
             -backend-config="container_name=prod-tfstate" \
-            -backend-config="key=multilayer-webapp-prod.tfstate"
+            -backend-config="key=multilayer-webapp.tfstate"
 
       - name: Terraform Plan (Prod)
         working-directory: terraform
