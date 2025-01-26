@@ -25,8 +25,10 @@ jobs:
       TF_VAR_env: prod
 
     steps:
-      - name: Check out main branch on repository
-        uses: actions/checkout@v3
+      - name: Check out the main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Azure Login (Prod)
         uses: azure/login@v1
