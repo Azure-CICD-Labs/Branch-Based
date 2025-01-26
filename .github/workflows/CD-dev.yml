@@ -27,7 +27,7 @@ jobs:
       TF_VAR_env: dev
     
     steps:
-      - name: Check out Repository
+      - name: Check out the exact commit from CI
         uses: actions/checkout@v3
         with:
           # point exactly to the repository and commit that triggered the CI run.
