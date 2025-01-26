@@ -29,6 +29,10 @@ jobs:
     steps:
       - name: Check out Repository
         uses: actions/checkout@v3
+        with:
+          # point exactly to the repository and commit that triggered the CI run.
+          repository: ${{ github.event.workflow_run.head_repository }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       # 1. Azure Login (Dev) - using OIDC
       - name: Azure Login (Dev)
