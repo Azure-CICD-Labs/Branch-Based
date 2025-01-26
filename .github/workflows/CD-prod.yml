@@ -80,8 +80,10 @@ jobs:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
 
     steps:
-      - name: Check out Repository
-        uses: actions/checkout@v3
+      - name: Check out the main branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Azure Login (Prod)
         uses: azure/login@v1
