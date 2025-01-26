@@ -1,8 +1,10 @@
 name: Terraform CD - Dev
 
 on:
-  push:
-    branches: ['dev']
+  workflow_run:
+    workflows: ["Terraform CI"] # Ensure this matches the name of your CI workflow
+    types:
+      - completed
 
 permissions:
   contents: read # Allows reading repository contents
@@ -35,8 +37,6 @@ jobs:
           echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
           echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
-          # If using Azure Public Cloud, no additional ARM_ENVIRONMENT is needed.
-          # For other clouds, you might set ARM_ENVIRONMENT here.
 
       # 3. Setup Terraform
       - name: Set up Terraform
@@ -52,13 +52,13 @@ jobs:
             -backend-config="container_name=dev-tfstate" \
             -backend-config="key=multilayer-webapp.tfstate"
 
-      # 5. Terraform Plan
-      - name: Terraform Plan (Dev)
+      # 5. Terraform Action
+      - name: Terraform Action (Dev)
         working-directory: terraform
         run: |
-          terraform plan -out=dev.tfplan
-
-      # 6. Terraform Apply
-      - name: Terraform Apply (Dev)
-        working-directory: terraform
-        run: terraform apply -auto-approve dev.tfplan
+          if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform plan -out=dev.tfplan
+            terraform apply -auto-approve dev.tfplan
+          fi
