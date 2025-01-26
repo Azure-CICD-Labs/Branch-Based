@@ -1,46 +1,33 @@
-name: Terraform CD - Dev
+name: Terraform CD - Prod
 
-# This workflow runs automatically when the 'Terraform CI' workflow completes.
-# It also can be triggered manually with an optional input to 'destroy'.
 on:
-  workflow_run:
-    workflows: ["Terraform CI"] # Ensure this matches the name of your CI workflow
+  pull_request:
+    branches:
+      - main
     types:
-      - completed
-  workflow_dispatch:
-    # checkov:skip=CKV_GHA_7
-    inputs:
-      action:
-        description: "Terraform action to perform in dev environment (apply/destroy)"
-        required: false
-        default: "apply"
+      - closed
 
 permissions:
-  contents: read # Allows reading repository contents
-  id-token: write # Enables OIDC authentication with Azure
+  contents: read
+  id-token: write
 
 jobs:
-  deploy-dev:
-    name: Deploy to Dev
+  plan-prod:
+    name: Plan for Prod
     runs-on: ubuntu-latest
-    environment: dev
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
-    env:
-      TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
-      TF_VAR_env: dev
+    if: ${{ github.event.pull_request.merged == true }}
+    environment: prod
     steps:
       - name: Check out Repository
         uses: actions/checkout@v3
 
-      # 1. OIDC Login to Azure
-      - name: Azure Login (Dev)
+      - name: Azure Login (Prod)
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # 2. Configure Env for Terraform OIDC
       - name: Configure Env for Terraform OIDC
         run: |
           echo "ARM_USE_OIDC=true" >> $GITHUB_ENV
@@ -48,29 +35,73 @@ jobs:
           echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
           echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
 
-      # 3. Setup Terraform
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
 
-      # 4. Terraform Init
-      - name: Terraform Init (Dev)
+      - name: Terraform Init (Prod)
         working-directory: terraform
         run: |
           terraform init \
-            -backend-config="container_name=dev-tfstate" \
+            -backend-config="container_name=prod-tfstate" \
             -backend-config="key=multilayer-webapp.tfstate"
 
-      # 5. Terraform Action (Dev)
-      - name: Terraform Action (Dev)
+      - name: Terraform Plan (Prod)
+        working-directory: terraform
+        run: terraform plan -out=prod.tfplan
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-prod-plan
+          path: terraform/prod.tfplan
+
+  apply-prod:
+    name: Apply to Prod
+    runs-on: ubuntu-latest
+    needs: plan-prod
+    environment:
+      name: prod
+      # GitHub Environments can require manual approvals
+      # or do 'deployment_branch_policy' if desired
+    if: ${{ github.event.pull_request.merged == true }}
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login (Prod)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Configure Env for Terraform OIDC
+        run: |
+          echo "ARM_USE_OIDC=true" >> $GITHUB_ENV
+          echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.6
+
+      - name: Terraform Init (Prod)
         working-directory: terraform
         run: |
-          if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
-            echo "Running Terraform DESTROY for Dev environment..."
-            terraform destroy -auto-approve
-          else
-            echo "Running Terraform PLAN & APPLY for Dev environment..."
-            terraform plan -out=dev.tfplan
-            terraform apply -auto-approve dev.tfplan
-          fi
+          terraform init \
+            -backend-config="container_name=prod-tfstate" \
+            -backend-config="key=multilayer-webapp.tfstate"
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: terraform-prod-plan
+          path: terraform
+
+      - name: Terraform Apply (Prod)
+        working-directory: terraform
+        run: terraform apply -auto-approve prod.tfplan
