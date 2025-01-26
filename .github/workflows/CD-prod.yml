@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
 
-    # Require CI success AND branch is 'main'
+    # Ensure the pull request is opened, synchronized, or reopened
     if: >
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.base.ref == 'main'
