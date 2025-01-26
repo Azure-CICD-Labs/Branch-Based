@@ -1,8 +1,9 @@
 name: Terraform CD - Prod
 
 on:
-  push:
-    branches: ['main']
+  pull_request:
+    branches: [main]
+    types: [closed]
 
 permissions:
   contents: read
@@ -12,6 +13,7 @@ jobs:
   plan-prod:
     name: Plan for Prod
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true }}
     environment: prod
     steps:
       - name: Check out Repository
@@ -59,8 +61,7 @@ jobs:
     needs: plan-prod
     environment:
       name: prod
-      # GitHub Environments can require manual approvals
-      # or do 'deployment_branch_policy' if desired
+    if: ${{ github.event.pull_request.merged == true }}
     steps:
       - name: Check out Repository
         uses: actions/checkout@v3
@@ -83,13 +84,6 @@ jobs:
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
-
-      - name: Terraform Init (Prod)
-        working-directory: terraform
-        run: |
-          terraform init \
-            -backend-config="container_name=prod-tfstate" \
-            -backend-config="key=multilayer-webapp.tfstate"
 
       - name: Download Plan Artifact
         uses: actions/download-artifact@v3
