@@ -27,12 +27,10 @@ jobs:
       TF_VAR_env: dev
     
     steps:
-      - name: Check out the exact commit from CI
-        uses: actions/checkout@v3
+      - name: Check out the dev branch
+        uses: actions/checkout@v4
         with:
-          # point exactly to the repository and commit that triggered the CI run.
-          repository: ${{ github.event.workflow_run.head_repository }}
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: dev
 
       # 1. Azure Login (Dev) - using OIDC
       - name: Azure Login (Dev)
