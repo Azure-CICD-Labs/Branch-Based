@@ -24,6 +24,7 @@ jobs:
     # Pass container name as TF_VAR_container_name from a repository variable
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
+      TF_VAR_env: dev
     
     steps:
       - name: Check out Repository
