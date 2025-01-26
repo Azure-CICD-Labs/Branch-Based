@@ -1,14 +1,10 @@
 name: Terraform CD - Dev
 
 on:
-  push:
-    branches: ['dev']
-  workflow_dispatch: # checkov:skip=CKV_GHA_7
-    inputs:
-      action:
-        description: "Action to perform (apply or destroy)"
-        required: false
-        default: "apply"
+  workflow_run:
+    workflows: ["Terraform CI"] # Ensure this matches the name of your CI workflow
+    types:
+      - completed
 
 permissions:
   contents: read # Allows reading repository contents
