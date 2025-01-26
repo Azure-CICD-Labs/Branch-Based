@@ -1,10 +1,18 @@
 name: Terraform CD - Dev
 
+# This workflow runs automatically when the 'Terraform CI' workflow completes.
+# It also can be triggered manually with an optional input to 'destroy'.
 on:
   workflow_run:
     workflows: ["Terraform CI"] # Ensure this matches the name of your CI workflow
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Terraform action to perform in dev environment (apply/destroy)"
+        required: false
+        default: "apply"
 
 permissions:
   contents: read # Allows reading repository contents
@@ -52,13 +60,15 @@ jobs:
             -backend-config="container_name=dev-tfstate" \
             -backend-config="key=multilayer-webapp.tfstate"
 
-      # 5. Terraform Action
+      # 5. Terraform Action (Dev)
       - name: Terraform Action (Dev)
         working-directory: terraform
         run: |
           if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+            echo "Running Terraform DESTROY for Dev environment..."
             terraform destroy -auto-approve
           else
+            echo "Running Terraform PLAN & APPLY for Dev environment..."
             terraform plan -out=dev.tfplan
             terraform apply -auto-approve dev.tfplan
           fi
