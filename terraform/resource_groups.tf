@@ -4,7 +4,7 @@ resource "azurerm_resource_group" "web" {
 }
 
 resource "azurerm_resource_group" "sql" {
-  name     = "rg-sql-multi-bb-app-${var.env}-${var.prim_loc_short}-01"
+  name     = "rg-sql-updated-bb-app-${var.env}-${var.prim_loc_short}-01"
   location = var.prim_loc
 }
 
