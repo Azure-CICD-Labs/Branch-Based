@@ -12,6 +12,13 @@ jobs:
     name: Destroy Dev Resources
     runs-on: ubuntu-latest
     environment: dev
+
+    # Only allow if we have the 'dev' branch selected in the 'Run workflow' dropdown
+    if: startsWith(github.ref, 'refs/heads/dev')
+
+    env:
+      TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
+
     steps:
       - name: Check out Repository
         uses: actions/checkout@v3
@@ -43,10 +50,10 @@ jobs:
         working-directory: terraform
         run: |
           terraform init \
-            -backend-config="container_name=dev-tfstate" \
-            -backend-config="key=multilayer-webapp.tfstate"
+            -backend-config="container_name=${TF_VAR_container_name}" \
+            -backend-config="key=multilayer-webapp-dev.tfstate"
 
-      # 5. Terraform Destroy
+      # 5. Terraform Destroy (Dev)
       - name: Terraform Destroy (Dev)
         working-directory: terraform
         run: |

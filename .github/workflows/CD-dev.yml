@@ -1,8 +1,10 @@
 name: Terraform CD - Dev
 
 on:
-  push:
-    branches: [ 'dev' ]
+  # Trigger this workflow ONLY when the "Terraform CI" workflow completes
+  workflow_run:
+    workflows: ["Terraform CI"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -13,6 +15,16 @@ jobs:
     name: Deploy to Dev
     runs-on: ubuntu-latest
     environment: dev
+
+    # Require that the CI concluded successfully AND that the branch is 'dev'
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      startsWith(github.event.workflow_run.head_branch, 'dev')
+
+    # Pass container name as TF_VAR_container_name from a repository variable
+    env:
+      TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
+    
     steps:
       - name: Check out Repository
         uses: actions/checkout@v3
@@ -44,10 +56,10 @@ jobs:
         working-directory: terraform
         run: |
           terraform init \
-            -backend-config="container_name=dev-tfstate" \
-            -backend-config="key=multilayer-webapp.tfstate"
+            -backend-config="container_name=${TF_VAR_container_name}" \
+            -backend-config="key=multilayer-webapp-dev.tfstate"
 
-      # 5. Terraform Plan & Apply
+      # 5. Terraform Plan & Apply (Dev)
       - name: Terraform Plan & Apply (Dev)
         working-directory: terraform
         run: |
