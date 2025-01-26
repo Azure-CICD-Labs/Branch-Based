@@ -1,10 +1,9 @@
 name: Terraform CD - Prod
 
 on:
-  # Trigger this workflow when "Terraform CI" completes
-  workflow_run:
-    workflows: ["Terraform CI"]
-    types: [completed]
+  # Trigger this workflow only for pull requests to main
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,17 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
 
-    # Require CI success AND branch is 'main'
+    # Ensure the pull request is opened, synchronized, or reopened
     if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'main')
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.base.ref == 'main'
 
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
 
     steps:
-      - name: Check out Repository
+      - name: Check out main branch on repository
         uses: actions/checkout@v3
 
       - name: Azure Login (Prod)
@@ -72,11 +71,10 @@ jobs:
     environment:
       name: prod
 
-    # The same condition is inherited from the first job's success,
-    # but we also keep it explicit for clarity:
+    # Ensure the workflow runs for the pull request to main
     if: >
-      github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'main')
+      github.event.pull_request.state == 'open' &&
+      github.event.pull_request.base.ref == 'main'
 
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
