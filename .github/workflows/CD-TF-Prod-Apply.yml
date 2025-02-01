@@ -43,7 +43,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: terraform-prod-plan
-          path: terraform
+          path: terraform/prod.tfplan
 
       - name: Terraform Init (Prod)
         working-directory: terraform
