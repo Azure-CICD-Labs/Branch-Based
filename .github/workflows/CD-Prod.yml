@@ -16,7 +16,6 @@ jobs:
     name: Plan for Prod
     runs-on: ubuntu-latest
     environment: prod
-    if: ${{ github.event_name == 'pull_request' }}
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
