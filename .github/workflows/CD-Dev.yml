@@ -22,11 +22,11 @@ jobs:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: dev
     steps:
-      - name: Check out the dev branch
-        uses: actions/checkout@v3
-        with:
-          ref: dev
-
+      - name: Check out the triggering branch
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.workflow_run.head_branch }}
+        
       - name: Azure Login (Dev)
         uses: azure/login@v1
         with:
