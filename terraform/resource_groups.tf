@@ -13,4 +13,5 @@ resource "azurerm_resource_group" "net" {
   location = var.prim_loc
 }
 
+
 # test comment
