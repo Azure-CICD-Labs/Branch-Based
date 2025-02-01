@@ -14,7 +14,7 @@ jobs:
   plan-dev:
     name: Plan for Dev
     runs-on: ubuntu-latest
-    environment: dev
+    environment: dev-plan
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       startsWith(github.event.workflow_run.head_branch, 'dev')
@@ -67,7 +67,7 @@ jobs:
     name: Apply to Dev
     runs-on: ubuntu-latest
     needs: plan-dev 
-    environment: dev
+    environment: dev-apply
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       startsWith(github.event.workflow_run.head_branch, 'dev')
