@@ -3,7 +3,7 @@ name: Terraform CD - Dev
 on:
   # Trigger this workflow ONLY when the "Terraform CI" workflow completes
   workflow_run:
-    workflows: ["Terraform CI"]
+    workflows: ["Terraform CI - Dev"]
     types: [completed]
 
 permissions:
