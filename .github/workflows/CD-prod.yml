@@ -112,6 +112,13 @@ jobs:
           name: terraform-prod-plan
           path: terraform
 
+      - name: Terraform Init (Prod)
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="container_name=${{ env.TF_VAR_container_name }}" \
+            -backend-config="key=multilayer-webapp-prod.tfstate"
       - name: Terraform Apply (Prod)
         working-directory: terraform
         run: terraform apply -auto-approve prod.tfplan
+        
