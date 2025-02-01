@@ -61,7 +61,7 @@ jobs:
         run: terraform plan -out=prod.tfplan
 
       - name: Upload Plan Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: terraform-prod-plan
           path: terraform/prod.tfplan
@@ -107,11 +107,18 @@ jobs:
           terraform_version: 1.5.6
 
       - name: Download Plan Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: terraform-prod-plan
           path: terraform
 
+      - name: Terraform Init (Prod)
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="container_name=${{ env.TF_VAR_container_name }}" \
+            -backend-config="key=multilayer-webapp-prod.tfstate"
       - name: Terraform Apply (Prod)
         working-directory: terraform
         run: terraform apply -auto-approve prod.tfplan
+        
