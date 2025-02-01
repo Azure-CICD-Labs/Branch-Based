@@ -1,23 +1,26 @@
-name: "Terraform Plan (Dev)"
+name: "Terraform Apply (Prod)"
 
 on:
-  pull_request:
-    branches: [ "dev" ]
+  push:
+    branches: [ "main" ]
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  plan-dev:
-    name: "Plan for Dev"
+  apply-prod:
+    name: "Apply to Prod"
     runs-on: ubuntu-latest
-    environment: dev
+    environment: prod
     steps:
-      - name: Check out Repo
+      - name: (Manual Approval Required) Wait for Prod Approval
+        run: echo "This job will pause until the prod environment is approved via GitHub Environment Protection Rules."
+      
+      - name: Check out Repository
         uses: actions/checkout@v3
 
-      - name: Azure Login (Dev)
+      - name: Azure Login (Prod)
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -36,25 +39,25 @@ jobs:
         with:
           terraform_version: 1.5.6
 
-      - name: Terraform Init (Dev)
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-prod-plan
+          path: terraform
+
+      - name: Terraform Init (Prod)
         working-directory: terraform
         env:
           TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
-          TF_VAR_env: dev
+          TF_VAR_env: prod
         run: |
           terraform init \
             -backend-config="container_name=${TF_VAR_container_name}" \
-            -backend-config="key=multilayer-webapp-dev.tfstate"
+            -backend-config="key=multilayer-webapp-prod.tfstate"
 
-      - name: Terraform Plan (Dev)
+      - name: Terraform Apply (Prod)
         working-directory: terraform
         env:
           TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
-          TF_VAR_env: dev
-        run: terraform plan -out=dev.tfplan
-
-      - name: Upload Dev Plan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-dev-plan
-          path: terraform/dev.tfplan
+          TF_VAR_env: prod
+        run: terraform apply -auto-approve prod.tfplan

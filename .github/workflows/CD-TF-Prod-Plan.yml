@@ -1,23 +1,23 @@
-name: "Terraform Apply (Dev)"
+name: "Terraform Plan (Prod)"
 
 on:
-  push:
-    branches: [ "dev" ]
+  pull_request:
+    branches: [ "main" ]
 
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  apply-dev:
-    name: "Apply to Dev"
+  plan-prod:
+    name: "Plan for Prod"
     runs-on: ubuntu-latest
-    environment: dev
+    environment: prod
     steps:
-      - name: Check out Repo
+      - name: Check out Repository
         uses: actions/checkout@v3
 
-      - name: Azure Login (Dev)
+      - name: Azure Login (Prod)
         uses: azure/login@v1
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -36,25 +36,25 @@ jobs:
         with:
           terraform_version: 1.5.6
 
-      - name: Download Dev Plan Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-dev-plan
-          path: terraform
-
-      - name: Terraform Init (Dev)
+      - name: Terraform Init (Prod)
         working-directory: terraform
         env:
           TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
-          TF_VAR_env: dev
+          TF_VAR_env: prod
         run: |
           terraform init \
             -backend-config="container_name=${TF_VAR_container_name}" \
-            -backend-config="key=multilayer-webapp-dev.tfstate"
+            -backend-config="key=multilayer-webapp-prod.tfstate"
 
-      - name: Terraform Apply (Dev)
+      - name: Terraform Plan (Prod)
         working-directory: terraform
         env:
           TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
-          TF_VAR_env: dev
-        run: terraform apply -auto-approve dev.tfplan
+          TF_VAR_env: prod
+        run: terraform plan -out=prod.tfplan
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-prod-plan
+          path: terraform/prod.tfplan
