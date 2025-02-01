@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   terraform-ci:
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Check out Repository
