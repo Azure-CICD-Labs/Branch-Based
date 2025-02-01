@@ -19,11 +19,6 @@ jobs:
     name: Terraform Plan – Dev
     runs-on: ubuntu-latest
 
-    # This job runs on:
-    # - push to dev branch
-    # - pull request targeting dev branch
-
-    # We'll assign to environment "dev" so that it uses dev secrets.
     environment:
       name: dev
 
