@@ -1,18 +1,4 @@
-locals {
-  pipeline_testing = "Version2"
-}
-
-resource "azurerm_resource_group" "web" {
-  name     = "rg-web-${local.pipeline_testing}-app-${var.env}-${var.prim_loc_short}-01"
-  location = var.prim_loc
-}
-
-resource "azurerm_resource_group" "sql" {
-  name     = "rg-sql-${local.pipeline_testing}-app-${var.env}-${var.prim_loc_short}-01"
-  location = var.prim_loc
-}
-
-resource "azurerm_resource_group" "net" {
-  name     = "rg-net-${local.pipeline_testing}-app-${var.env}-${var.prim_loc_short}-01"
-  location = var.prim_loc
+resource "azurerm_resource_group" "this" {
+  name     = "rg-${var.env}-${var.location_short}-01"
+  location = var.location
 }
