@@ -15,7 +15,7 @@ jobs:
   plan-prod:
     name: Plan for Prod
     runs-on: ubuntu-latest
-    environment: prod
+    environment: prod-plan
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
@@ -65,7 +65,8 @@ jobs:
     name: Apply to Prod
     runs-on: ubuntu-latest
     needs: plan-prod
-    environment: prod
+    environment: prod-apply
+    if: ${{ github.event_name == 'push' }}
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
