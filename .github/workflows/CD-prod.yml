@@ -1,7 +1,6 @@
 name: Terraform CD - Prod
 
 on:
-  # Trigger this workflow only for pull requests to main
   pull_request:
     branches: [main]
 
@@ -14,19 +13,15 @@ jobs:
     name: Plan for Prod
     runs-on: ubuntu-latest
     environment: prod
-
-    # Ensure the pull request is opened, synchronized, or reopened
     if: >
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.base.ref == 'main'
-
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
-
     steps:
       - name: Check out the main branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: main
 
@@ -70,20 +65,21 @@ jobs:
     name: Apply to Prod
     runs-on: ubuntu-latest
     needs: plan-prod
-    environment:
-      name: prod
-
-    # Ensure the workflow runs for the pull request to main
+    environment: prod
     if: >
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.base.ref == 'main'
-
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
-
+      TF_VAR_env: prod
     steps:
+      - name: (Manual Approval Required) Wait for Prod Approval
+        run: echo "This job will pause until the prod environment is approved via GitHub Environment Protection Rules."
+        # Note: The prod environment protection rules (configured in repo settings)
+        # will block this job until an approver authorizes it.
+
       - name: Check out the main branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: main
 
@@ -116,9 +112,9 @@ jobs:
         working-directory: terraform
         run: |
           terraform init \
-            -backend-config="container_name=${{ env.TF_VAR_container_name }}" \
+            -backend-config="container_name=${TF_VAR_container_name}" \
             -backend-config="key=multilayer-webapp-prod.tfstate"
+
       - name: Terraform Apply (Prod)
         working-directory: terraform
         run: terraform apply -auto-approve prod.tfplan
-        
