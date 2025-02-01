@@ -1,5 +1,5 @@
 locals {
-  pipeline_testing = "Version1"
+  pipeline_testing = "Version2"
 }
 
 resource "azurerm_resource_group" "web" {
