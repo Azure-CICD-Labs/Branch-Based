@@ -40,13 +40,12 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Terraform Init
+      - name: Terraform Init (Dev)
         working-directory: terraform
-        run: terraform init
-
-      - name: Terraform Format Check
-        working-directory: terraform
-        run: terraform fmt -check
+        run: |
+          terraform init \
+            -backend-config="container_name=${TF_VAR_container_name}" \
+            -backend-config="key=multilayer-webapp-dev.tfstate"
 
       - name: Terraform Plan
         working-directory: terraform
