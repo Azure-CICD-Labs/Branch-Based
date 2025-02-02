@@ -1,6 +1,6 @@
 resource "azurerm_resource_group" "this" {
-  name     = "rg-e2e-${var.env}-${var.location_short}-01"
+  name     = "rg-PR2DEV-${var.env}-${var.location_short}-01"
   location = var.location
 }
 
-# fully working version
+# Testing PR to DEV!
