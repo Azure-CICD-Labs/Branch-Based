@@ -20,8 +20,6 @@ jobs:
     outputs:
       tfplan_exitcode: ${{ steps.tf-plan.outputs.exitcode }}
 
-    # Environment variables that the Azure provider and Terraform need.
-    # This is exactly how the MS reference pipeline sets them: at the job level.
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
@@ -128,7 +126,7 @@ jobs:
     needs: plan-prod
     environment: prod-apply  # gating with required approvals
     # Only apply if:
-    #   (a) This is a push event (the PR was merged or a direct commit to main),
+    #   (a) This is a push event (AKA PR was merged),
     #   (b) The plan exit code == '2' (changes present),
     #   (c) The environment approval is granted.
     if: >

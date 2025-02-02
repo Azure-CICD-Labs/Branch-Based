@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "this" {
-  name     = "rg-test123-${var.env}-${var.location_short}-01"
+  name     = "rg-e2e-${var.env}-${var.location_short}-01"
   location = var.location
 }
 
