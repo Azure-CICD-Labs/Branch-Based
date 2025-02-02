@@ -22,6 +22,7 @@ jobs:
           echo "ERROR: You can only merge to main from dev."
           exit 1
   plan-prod:
+    needs: check_branch
     name: Plan for Prod
     runs-on: ubuntu-latest
     environment: prod-plan  # no gating environment
