@@ -176,7 +176,7 @@ jobs:
         run: |
           terraform init \
             -backend-config="container_name=${TF_VAR_container_name}" \
-            -backend-config="key=multilayer-webapp-prod.tfstate"
+            -backend-config="key=branch-based.tfstate"
 
       - name: Terraform Apply (Prod)
         working-directory: terraform
