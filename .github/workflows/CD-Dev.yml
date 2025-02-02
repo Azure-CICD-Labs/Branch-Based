@@ -9,23 +9,36 @@ on:
 permissions:
   contents: read
   id-token: write
+  pull-requests: write  # needed if you want to post PR comments
 
 jobs:
   plan-dev:
     name: Plan for Dev
     runs-on: ubuntu-latest
-    environment: dev-plan
+    environment: dev-plan  # no gating environment
+    # Only run if CI ended successfully and the head_branch is dev (push or PR)
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       startsWith(github.event.workflow_run.head_branch, 'dev')
+
+    outputs:
+      tfplan_exitcode: ${{ steps.tf-plan.outputs.exitcode }}
+
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: dev
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: "true"
+      ARM_SKIP_PROVIDER_REGISTRATION: "true"
+
     steps:
-      - name: Check out the dev branch
+      - name: Checkout (dev branch or PR commit)
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
       - name: Azure Login (Dev)
         uses: azure/login@v1
@@ -34,17 +47,11 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Configure Env for Terraform OIDC
-        run: |
-          echo "ARM_USE_OIDC=true" >> $GITHUB_ENV
-          echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
-          echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
-          echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
-
-      - name: Set up Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
+          terraform_wrapper: false
 
       - name: Terraform Init (Dev)
         working-directory: terraform
@@ -54,8 +61,19 @@ jobs:
             -backend-config="key=branch-based.tfstate"
 
       - name: Terraform Plan (Dev)
+        id: tf-plan
         working-directory: terraform
-        run: terraform plan -out=dev.tfplan
+        shell: bash
+        run: |
+          exitcode=0
+          terraform plan -detailed-exitcode -no-color -out=dev.tfplan || exitcode=$?
+          echo "exitcode=$exitcode" >> $GITHUB_OUTPUT
+
+          if [ $exitcode -eq 1 ]; then
+            echo "Terraform Plan Failed!"
+            exit 1
+          fi
+          # 0 => no changes, 2 => changes
 
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
@@ -63,22 +81,80 @@ jobs:
           name: terraform-dev-plan
           path: terraform/dev.tfplan
 
+      - name: Create Plan String
+        id: planstring
+        working-directory: terraform
+        run: |
+          PLAN_CONTENT=$(terraform show -no-color dev.tfplan)
+          delimiter="$(openssl rand -hex 8)"
+
+          echo "summary<<${delimiter}" >> $GITHUB_OUTPUT
+          echo "## Terraform Plan Output (Dev)" >> $GITHUB_OUTPUT
+          echo "<details><summary>Click to expand</summary>" >> $GITHUB_OUTPUT
+          echo '' >> $GITHUB_OUTPUT
+          echo '```terraform' >> $GITHUB_OUTPUT
+          echo "$PLAN_CONTENT" >> $GITHUB_OUTPUT
+          echo '```' >> $GITHUB_OUTPUT
+          echo "</details>" >> $GITHUB_OUTPUT
+          echo "${delimiter}" >> $GITHUB_OUTPUT
+
+      - name: Publish Plan to Task Summary
+        env:
+          SUMMARY: ${{ steps.planstring.outputs.summary }}
+        run: echo "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+
+      # If the original event was a PR targeting dev, post plan as a comment
+      - name: Post Plan to PR (if PR event)
+        if: ${{ github.event.workflow_run.event == 'pull_request' }}
+        uses: actions/github-script@v7
+        env:
+          SUMMARY: ${{ steps.planstring.outputs.summary }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const body = process.env.SUMMARY;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
+
+
   apply-dev:
     name: Apply to Dev
     runs-on: ubuntu-latest
-    needs: plan-dev 
-    environment: dev-apply
+    needs: plan-dev
+    environment: dev-apply  # gating with required approvers
+    # Only apply if:
+    #   - plan exitcode == 2 (changes),
+    #   - original event was a push (not a PR),
+    #   - the head_branch is dev,
+    #   - environment gating is approved.
     if: >
       github.event.workflow_run.conclusion == 'success' &&
-      startsWith(github.event.workflow_run.head_branch, 'dev')
+      startsWith(github.event.workflow_run.head_branch, 'dev') &&
+      needs.plan-dev.outputs.tfplan_exitcode == '2' &&
+      github.event.workflow_run.event == 'push'
+
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: dev
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: "true"
+      ARM_SKIP_PROVIDER_REGISTRATION: "true"
+
     steps:
-      - name: Check out the dev branch
+      - name: (Manual Approval Required) Wait for Dev Approval
+        run: echo "Waiting for environment approval..."
+
+      - name: Checkout (same commit as plan)
         uses: actions/checkout@v3
         with:
-          ref: dev
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
       - name: Azure Login (Dev)
         uses: azure/login@v1
@@ -87,14 +163,7 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Configure Env for Terraform OIDC
-        run: |
-          echo "ARM_USE_OIDC=true" >> $GITHUB_ENV
-          echo "ARM_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}" >> $GITHUB_ENV
-          echo "ARM_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}" >> $GITHUB_ENV
-          echo "ARM_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}" >> $GITHUB_ENV
-
-      - name: Set up Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.6
