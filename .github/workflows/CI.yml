@@ -1,0 +1,53 @@
+name: Terraform CI - Dev
+
+on:
+  push:
+    branches: ['dev']
+  pull_request:
+    branches: ['dev']
+
+permissions:
+  contents: read # Allows reading repository contents
+  id-token: write # Required for OIDC if needed for external scans
+
+jobs:
+  terraform-ci:
+    runs-on: ubuntu-latest
+    # steps:
+    #   - name: Dummy Step – Skipping Terraform CI
+    #     run: echo "Terraform CI job skipped. Exiting successfully."
+    steps:
+      - name: Check out Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.6
+
+      # 1. Install TFLint
+      - name: Install TFLint
+        run: |
+          curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+      # 2. Install Checkov for security scans
+      - name: Install Checkov
+        run: |
+          pip install --upgrade pip
+          pip install checkov
+
+      # 3. Check Terraform formatting
+      - name: Format Check
+        run: terraform fmt -check -recursive
+
+      # 4. Validate Terraform configuration
+      - name: Validate
+        run: terraform validate
+
+      # 5. Lint using TFLint
+      - name: Lint with TFLint
+        run: tflint --init && tflint
+
+      # 6. Security/compliance scan with Checkov
+      - name: Run Checkov
+        run: checkov -d .
