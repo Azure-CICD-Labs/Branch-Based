@@ -13,15 +13,22 @@ permissions:
   pull-requests: write  # needed if we want to post plan output as PR comment
 
 jobs:
+  check_branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch
+        if: github.base_ref == 'main' && github.head_ref != 'dev'
+        run: |
+          echo "ERROR: You can only merge to main from dev."
+          exit 1
   plan-prod:
+    needs: check_branch
     name: Plan for Prod
     runs-on: ubuntu-latest
     environment: prod-plan  # no gating environment
     outputs:
       tfplan_exitcode: ${{ steps.tf-plan.outputs.exitcode }}
 
-    # Environment variables that the Azure provider and Terraform need.
-    # This is exactly how the MS reference pipeline sets them: at the job level.
     env:
       TF_VAR_container_name: ${{ vars.TFSTATE_CONTAINER_NAME }}
       TF_VAR_env: prod
@@ -128,7 +135,7 @@ jobs:
     needs: plan-prod
     environment: prod-apply  # gating with required approvals
     # Only apply if:
-    #   (a) This is a push event (the PR was merged or a direct commit to main),
+    #   (a) This is a push event (AKA PR was merged),
     #   (b) The plan exit code == '2' (changes present),
     #   (c) The environment approval is granted.
     if: >
